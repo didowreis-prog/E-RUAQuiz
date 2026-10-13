@@ -1,0 +1,1454 @@
+```html
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>E-Rua · Escuta com Trabalhadores</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#05070d;
+    --fg:#e9eef7;
+    --muted:#7f8ca3;
+    --accent:#4d9fff;
+    --accent2:#82b8ff;
+    --accent-deep:#061029;
+    --line:rgba(255,255,255,.09);
+    --card:rgba(255,255,255,.03);
+    --success:#10b981;
+    --danger:#ef4444;
+  }
+  html,body{height:100%}
+  body{
+    background:var(--bg);color:var(--fg);
+    font-family:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    min-height:100vh;overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  .bg{position:fixed;inset:0;z-index:-2;overflow:hidden}
+  .bg::before,.bg::after{content:'';position:absolute;border-radius:50%;filter:blur(110px);opacity:.22}
+  .bg::before{width:65vw;height:65vw;background:var(--accent);top:-22vw;left:-18vw;animation:f1 20s ease-in-out infinite}
+  .bg::after{width:55vw;height:55vw;background:var(--accent2);bottom:-24vw;right:-14vw;animation:f2 26s ease-in-out infinite}
+  @keyframes f1{50%{transform:translate(6vw,8vh) scale(1.15)}}
+  @keyframes f2{50%{transform:translate(-6vw,-8vh) scale(1.1)}}
+  .grid{
+    position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.35;
+    background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);
+    background-size:64px 64px;
+    mask-image:radial-gradient(ellipse at 50% 30%,#000 20%,transparent 78%);
+  }
+  .progress{position:fixed;top:0;left:0;right:0;height:3px;background:rgba(255,255,255,.06);z-index:50}
+  .progress__bar{
+    height:100%;width:0%;
+    background:linear-gradient(90deg,var(--accent),var(--accent2));
+    box-shadow:0 0 18px rgba(77,159,255,.8);
+    transition:width .45s cubic-bezier(.2,.8,.2,1);
+  }
+  main{display:flex;flex-direction:column;min-height:100vh}
+  .screen{display:none;width:100%;max-width:880px;margin:0 auto;padding:56px 22px 130px;flex:1}
+  .screen.is-active{display:block;animation:up .45s cubic-bezier(.2,.8,.2,1) both}
+  @keyframes up{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+
+  .intro{padding-top:6vh;text-align:left}
+  .badge{
+    display:inline-block;font-size:.74rem;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--accent);border:1px solid rgba(77,159,255,.35);
+    padding:8px 16px;border-radius:999px;background:rgba(77,159,255,.06);margin-bottom:26px;
+  }
+  .sync-indicator{
+    display:inline-flex;align-items:center;gap:7px;font-size:.76rem;
+    color:var(--muted);margin-left:12px;vertical-align:middle;
+  }
+  .sync-indicator .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .sync-indicator.online .dot{background:var(--success);box-shadow:0 0 8px var(--success)}
+  .sync-indicator.offline .dot{background:var(--muted)}
+
+  .logo{
+    font-size:clamp(3.4rem,13vw,7rem);line-height:.92;font-weight:800;letter-spacing:-.05em;
+    background:linear-gradient(120deg,#fff 10%,var(--accent) 55%,var(--accent2) 95%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    margin-bottom:14px;
+  }
+  .lead{font-size:clamp(1.15rem,3.2vw,1.6rem);color:var(--fg);font-weight:600;margin-bottom:18px}
+  .desc{color:var(--muted);font-size:1.05rem;line-height:1.7;max-width:640px;margin-bottom:36px}
+  .tiny{color:var(--muted);font-size:.82rem;line-height:1.6;margin-top:18px}
+  
+  .meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:34px}
+  .meta__count{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.88rem;color:var(--accent);letter-spacing:.08em}
+  .meta__tag{font-size:.76rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .question{
+    font-size:clamp(1.6rem,4.8vw,2.75rem);font-weight:750;line-height:1.24;
+    letter-spacing:-.025em;min-height:2.2em;
+  }
+  .question.caret::after{
+    content:'▌';margin-left:3px;color:var(--accent);
+    animation:blinkCaret .85s steps(1) infinite;font-weight:400;
+  }
+  @keyframes blinkCaret{50%{opacity:0}}
+  .sub{color:var(--muted);font-size:1rem;margin-top:14px;opacity:0;transition:opacity .4s;line-height:1.55}
+  .sub.show{opacity:1}
+  .answers{margin-top:36px;opacity:0;transform:translateY(10px);transition:.45s cubic-bezier(.2,.8,.2,1)}
+  .answers.show{opacity:1;transform:none}
+
+  .opts{display:flex;flex-direction:column;gap:13px}
+  .opt{
+    display:flex;align-items:center;gap:18px;width:100%;
+    padding:19px 24px;border-radius:18px;background:var(--card);
+    border:1px solid var(--line);color:var(--fg);font-size:1.12rem;
+    font-family:inherit;text-align:left;cursor:pointer;line-height:1.45;
+    transition:.22s cubic-bezier(.2,.7,.3,1);
+  }
+  .opt:hover{border-color:rgba(77,159,255,.45);background:rgba(77,159,255,.07);transform:translateX(5px)}
+  .opt.is-sel{
+    border-color:var(--accent);background:rgba(77,159,255,.14);
+    box-shadow:0 0 0 1px var(--accent),0 14px 44px -16px rgba(77,159,255,.85);
+  }
+  .opt__mark{
+    width:24px;height:24px;border-radius:50%;flex:0 0 auto;
+    border:2px solid var(--muted);position:relative;transition:.2s;
+  }
+  .opt--check .opt__mark{border-radius:7px}
+  .opt.is-sel .opt__mark{border-color:var(--accent);background:var(--accent)}
+  .opt.is-sel .opt__mark::after{
+    content:'';position:absolute;inset:5px;border-radius:50%;background:var(--accent-deep);
+  }
+  .opt--check.is-sel .opt__mark::after{border-radius:3px}
+
+  .opts--big{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px}
+  .opts--big .opt{
+    min-height:120px;padding:26px 24px;font-size:1.35rem;font-weight:650;
+    justify-content:center;text-align:center;border-radius:22px;
+  }
+  .opts--big .opt__mark{display:none}
+  .opts--big .opt:hover{transform:translateY(-3px)}
+
+  .tags{display:flex;flex-wrap:wrap;gap:12px}
+  .tag{
+    padding:15px 26px;border-radius:999px;border:1px solid var(--line);
+    background:var(--card);color:var(--fg);font-family:inherit;font-size:1.05rem;
+    font-weight:500;cursor:pointer;transition:.22s;
+    animation:popIn .35s cubic-bezier(.2,1.4,.4,1) backwards;
+  }
+  .tag:hover{border-color:rgba(77,159,255,.5);transform:translateY(-2px)}
+  .tag.is-sel{
+    border-color:var(--accent);background:rgba(77,159,255,.16);color:var(--accent);
+    box-shadow:0 0 0 1px var(--accent),0 10px 32px -14px rgba(77,159,255,.9);
+  }
+  .outros-input{display:none;margin-top:20px}
+  .outros-input.show{display:block;animation:up .35s both}
+
+  .duration-picker{
+    display:flex;flex-direction:column;gap:26px;
+    padding:28px 26px;border-radius:24px;border:1px solid var(--line);
+    background:var(--card);
+  }
+  .duration-tabs{
+    display:inline-flex;padding:6px;border-radius:999px;
+    background:rgba(255,255,255,.05);border:1px solid var(--line);
+    align-self:flex-start;gap:8px;
+  }
+  .duration-tab{
+    border:none;background:transparent;color:var(--muted);
+    font-family:inherit;font-size:1rem;font-weight:600;
+    padding:10px 26px;border-radius:999px;cursor:pointer;transition:.22s;
+  }
+  .duration-tab.is-active{
+    background:linear-gradient(120deg,var(--accent),var(--accent2));
+    color:var(--accent-deep);
+    box-shadow:0 6px 20px -6px rgba(77,159,255,.9);
+  }
+  .duration-quick{display:flex;flex-wrap:wrap;gap:12px}
+  .duration-chip{
+    padding:12px 22px;border-radius:999px;border:1px solid var(--line);
+    background:rgba(255,255,255,.02);color:var(--fg);font-family:inherit;
+    font-size:1rem;cursor:pointer;transition:.2s;
+  }
+  .duration-chip:hover{border-color:rgba(77,159,255,.5);transform:translateY(-2px)}
+  .duration-chip.is-sel{
+    border-color:var(--accent);background:rgba(77,159,255,.16);color:var(--accent);
+    box-shadow:0 0 0 1px var(--accent),0 10px 28px -14px rgba(77,159,255,.9);
+  }
+  .duration-stepper{display:flex;align-items:center;gap:18px;margin-top:6px}
+  .duration-step-btn{
+    width:48px;height:48px;border-radius:50%;border:1px solid var(--line);
+    background:var(--card);color:var(--fg);font-size:1.4rem;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;transition:.2s;font-family:inherit;
+  }
+  .duration-step-btn:hover{border-color:var(--accent);color:var(--accent)}
+  .duration-value-display{
+    font-size:1.25rem;font-weight:700;color:var(--fg);
+    min-width:140px;letter-spacing:-.01em;
+  }
+  .duration-value-display span{color:var(--accent);margin-right:6px;font-size:1.5rem}
+
+  .audio{
+    display:flex;flex-direction:column;gap:18px;
+    padding:24px 22px;border-radius:20px;border:1px solid var(--line);
+    background:rgba(255,255,255,.02);
+  }
+  .audio__stage{display:flex;align-items:center;gap:22px;flex-wrap:wrap}
+  .audio__btn{
+    display:inline-flex;align-items:center;gap:12px;
+    padding:16px 28px;border-radius:999px;border:1px solid var(--line);
+    background:transparent;color:var(--fg);font-family:inherit;font-size:1.05rem;font-weight:600;
+    cursor:pointer;transition:.22s;
+  }
+  .audio__btn:hover{border-color:var(--accent);color:var(--accent)}
+  .audio__dot{
+    width:13px;height:13px;border-radius:50%;background:var(--accent);
+    box-shadow:0 0 0 0 rgba(77,159,255,.6);
+  }
+  .audio.is-rec .audio__btn{border-color:var(--accent);color:var(--accent)}
+  .audio.is-rec .audio__dot{animation:pulseRec 1.2s infinite}
+  @keyframes pulseRec{0%{box-shadow:0 0 0 0 rgba(77,159,255,.55)}100%{box-shadow:0 0 0 16px rgba(77,159,255,0)}}
+  .audio__timer{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:1.2rem;color:var(--muted);letter-spacing:.06em}
+  .audio.is-rec .audio__timer{color:var(--accent)}
+  .audio__play{display:flex;flex-direction:column;gap:12px;animation:up .35s both}
+  .audio__play[hidden]{display:none}
+  .audio__play audio{width:100%;filter:invert(.92) hue-rotate(180deg) saturate(.5)}
+  .audio__redo{
+    align-self:flex-start;background:transparent;border:1px solid var(--line);
+    color:var(--muted);padding:10px 22px;border-radius:999px;font-family:inherit;
+    font-size:.9rem;cursor:pointer;transition:.2s;
+  }
+  .audio__redo:hover{border-color:var(--fg);color:var(--fg)}
+  .audio__hint{font-size:.82rem;color:var(--muted);line-height:1.6}
+
+  .hybrid-field{display:flex;flex-direction:column;gap:18px}
+  .hybrid-divider{
+    display:flex;align-items:center;gap:14px;color:var(--muted);
+    font-size:.82rem;letter-spacing:.12em;text-transform:uppercase;margin:6px 0;
+  }
+  .hybrid-divider::before,.hybrid-divider::after{
+    content:'';flex:1;height:1px;background:var(--line);
+  }
+
+  .consent{display:flex;flex-direction:column;gap:36px;align-items:stretch}
+  .smiley-wrap{display:flex;justify-content:center;padding:6px 0}
+  .smiley{
+    width:clamp(130px,32vw,180px);height:clamp(130px,32vw,180px);
+    color:var(--accent);filter:drop-shadow(0 12px 44px rgba(77,159,255,.55));
+    animation:smileyPulse 3s ease-in-out infinite, pop .7s cubic-bezier(.2,1.4,.4,1) both;
+  }
+  @keyframes smileyPulse{0%,100%{transform:scale(1) rotate(0deg)}50%{transform:scale(1.06) rotate(-3deg)}}
+  @keyframes pop{from{opacity:0;transform:scale(.4)}}
+  .smiley .eye{transform-box:fill-box;transform-origin:center;animation:eyeBlink 5s infinite}
+  .smiley .eye--r{animation-delay:.12s}
+  @keyframes eyeBlink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.08)}}
+
+  .input,.textarea{
+    width:100%;background:transparent;border:none;border-bottom:2px solid var(--line);
+    color:var(--fg);font-family:inherit;font-size:1.18rem;padding:16px 4px;
+    outline:none;transition:.25s;
+  }
+  .input::placeholder,.textarea::placeholder{color:#4d5a70}
+  .input:focus,.textarea:focus{border-color:var(--accent);box-shadow:0 8px 24px -18px var(--accent)}
+  .textarea{resize:none;min-height:140px;line-height:1.65;border:1px solid var(--line);
+    border-radius:16px;padding:18px 20px;background:var(--card)}
+  .textarea:focus{border-color:var(--accent)}
+
+  .triple{display:flex;flex-direction:column;gap:16px}
+  .triple .row{display:flex;align-items:center;gap:16px}
+  .triple .num{font-family:ui-monospace,monospace;font-size:.95rem;color:var(--accent);width:34px;flex:0 0 auto}
+
+  .scale{display:flex;gap:12px;flex-wrap:wrap}
+  .scale__btn{
+    flex:1;min-width:68px;height:82px;border-radius:18px;
+    background:var(--card);border:1px solid var(--line);color:var(--fg);
+    font-family:inherit;font-size:1.5rem;font-weight:700;cursor:pointer;transition:.22s;
+  }
+  .scale__btn:hover{border-color:rgba(77,159,255,.5);transform:translateY(-3px)}
+  .scale__btn.is-sel{
+    border-color:var(--accent);background:rgba(77,159,255,.16);color:var(--accent);
+    box-shadow:0 0 0 1px var(--accent),0 14px 40px -18px rgba(77,159,255,.9);
+  }
+  .scale__labels{display:flex;justify-content:space-between;margin-top:14px;font-size:.84rem;color:var(--muted)}
+
+  .nav{display:flex;gap:14px;margin-top:48px;align-items:center}
+  .btn{
+    font-family:inherit;font-size:1.02rem;font-weight:600;cursor:pointer;
+    border-radius:999px;padding:15px 32px;border:1px solid transparent;transition:.22s;
+    display:inline-flex;align-items:center;justify-content:center;
+  }
+  .btn--primary{
+    background:linear-gradient(120deg,var(--accent),var(--accent2));color:var(--accent-deep);
+    box-shadow:0 14px 40px -16px rgba(77,159,255,.9);
+  }
+  .btn--primary:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 20px 50px -16px rgba(77,159,255,1)}
+  .btn--primary:disabled{opacity:.28;cursor:not-allowed;box-shadow:none}
+  .btn--ghost{background:transparent;border-color:var(--line);color:var(--muted)}
+  .btn--ghost:hover:not(:disabled){border-color:var(--fg);color:var(--fg)}
+  .btn--ghost:disabled{opacity:.25;cursor:not-allowed}
+  .btn--big{padding:18px 42px;font-size:1.1rem}
+  .btn span{margin-left:8px}
+
+  .hint{
+    position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(10px);
+    font-size:.76rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
+    opacity:0;transition:.4s;pointer-events:none;
+  }
+  .hint.show{opacity:.7;transform:translateX(-50%)}
+
+  .check{
+    width:76px;height:76px;border-radius:50%;display:grid;place-items:center;
+    background:linear-gradient(120deg,var(--accent),var(--accent2));color:var(--accent-deep);
+    font-size:2.2rem;font-weight:800;margin-bottom:26px;
+    box-shadow:0 20px 60px -20px rgba(77,159,255,.95);
+    animation:pop .6s cubic-bezier(.2,1.4,.4,1) both;
+  }
+  .end h2{font-size:clamp(2rem,7vw,3.4rem);font-weight:800;letter-spacing:-.04em;margin-bottom:12px}
+  .end > p{color:var(--muted);line-height:1.7;margin-bottom:34px;max-width:620px}
+  
+  .cloud-box{
+    padding:22px;border-radius:20px;border:1px solid rgba(77,159,255,.3);
+    background:rgba(77,159,255,.06);margin-bottom:28px;display:flex;
+    flex-direction:column;gap:14px;
+  }
+  .cloud-box__header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .cloud-box__status{font-weight:600;font-size:1.05rem;color:var(--fg)}
+  .cloud-box__status.sent{color:var(--success)}
+  .cloud-box__status.error{color:var(--danger)}
+  .cloud-box__protocol{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.9rem;color:var(--accent)}
+  
+  .summary{
+    border:1px solid var(--line);border-radius:20px;background:var(--card);
+    padding:24px;max-height:360px;overflow-y:auto;margin-bottom:28px;
+  }
+  .summary__item{padding:14px 0;border-bottom:1px dashed rgba(255,255,255,.07)}
+  .summary__item:last-child{border-bottom:none}
+  .summary__q{font-size:.85rem;color:var(--muted);margin-bottom:6px}
+  .summary__a{font-size:1rem;line-height:1.6;white-space:pre-wrap}
+  .summary__a audio{width:100%;margin-top:10px}
+  .summary__dl{
+    display:inline-block;margin-top:10px;font-size:.86rem;color:var(--accent);
+    text-decoration:none;border-bottom:1px dashed rgba(77,159,255,.4);padding-bottom:1px;
+  }
+  .end-actions{display:flex;gap:12px;flex-wrap:wrap}
+
+  @media(max-width:560px){
+    .screen{padding:40px 18px 120px}
+    .nav{gap:10px}
+    .btn{padding:14px 24px;font-size:.95rem}
+    .opt{padding:16px 20px;font-size:1.05rem}
+    .tag{padding:13px 20px;font-size:.95rem}
+  }
+</style>
+</head>
+<body>
+<div class="bg" aria-hidden="true"></div>
+<div class="grid" aria-hidden="true"></div>
+<div class="progress"><div class="progress__bar" id="bar"></div></div>
+
+<main>
+  <section class="screen is-active" id="screen-intro">
+    <div class="intro">
+      <div class="badge">
+        Consultório na Rua · SEAS · Vila Velha
+      </div>
+      <span class="sync-indicator offline" id="sync-status">
+        <span class="dot"></span> <span id="sync-label">Conectando…</span>
+      </span>
+
+      <h1 class="logo">E-RUA</h1>
+      <p class="lead">Escuta com os trabalhadores</p>
+      <p class="desc">
+        Uma pergunta por vez. O que a plataforma resolve hoje, o que ainda dói
+        e o que precisa vir na V.2. Suas respostas são salvas diretamente na planilha
+        e integradas ao painel no AppSheet.
+      </p>
+      <button class="btn btn--primary btn--big" id="start">Iniciar <span>→</span></button>
+      <p class="tiny">
+        Tempo estimado: 8 a 12 minutos · As respostas são consolidadas em nuvem com criptografia.
+      </p>
+    </div>
+  </section>
+
+  <section class="screen" id="screen-quiz">
+    <header class="meta">
+      <span class="meta__count" id="count">01 / 24</span>
+      <span class="meta__tag">E-Rua · Escuta</span>
+    </header>
+    <h2 class="question" id="question"></h2>
+    <p class="sub" id="sub"></p>
+    <div class="answers" id="answers"></div>
+    <nav class="nav">
+      <button class="btn btn--ghost" id="back">← Voltar</button>
+      <button class="btn btn--primary" id="next" disabled>Avançar →</button>
+    </nav>
+  </section>
+
+  <section class="screen" id="screen-end">
+    <div class="end">
+      <div class="check">✓</div>
+      <h2 id="end-title">Obrigado.</h2>
+      <p id="end-lead">Sua escuta entrou para o dossiê coletivo do E-Rua.</p>
+
+      <!-- Cartão de sincronização com o Google Sheets & AppSheet -->
+      <div class="cloud-box" id="cloud-box">
+        <div class="cloud-box__header">
+          <span class="cloud-box__status" id="cloud-status">Enviando respostas para a planilha…</span>
+          <span class="cloud-box__protocol" id="cloud-protocol"></span>
+        </div>
+        <button class="btn btn--primary" id="cloud-retry" style="display:none; align-self:flex-start;">
+          Tentar reenviar agora
+        </button>
+      </div>
+
+      <div class="summary" id="summary"></div>
+      <div class="end-actions" id="end-actions">
+        <button class="btn btn--primary" id="copy">Copiar respostas</button>
+        <button class="btn btn--ghost" id="download">Baixar .txt</button>
+        <button class="btn btn--ghost" id="restart">Recomeçar</button>
+      </div>
+      <p class="tiny">
+        Próximo passo: consolidação no AppSheet + carta de apoio dos trabalhadores à gestão municipal.
+      </p>
+    </div>
+  </section>
+</main>
+
+<div class="hint" id="hint">clique para acelerar</div>
+
+<script>
+/**
+ * URL oficial de produção configurada para a sua implantação no Apps Script:
+ */
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyjn0s8Mx9807o-EfntUek4hYMWahKJD-xeOFTY2rn8wDXrJfXUrOGGyoXYdhRgvAbDtQ/exec';
+
+const DEFAULT_FUNCIONALIDADES = [
+  'Integração eCR–SEAS',
+  'Relatórios e indicadores',
+  'Aplicativo mobile',
+  'Notificações e alertas',
+  'Prontuário compartilhado',
+  'Segurança e LGPD',
+  'Capacitação e tutoriais'
+];
+
+/**
+ * Perguntas padrão de reserva (offline / fallback automático)
+ */
+const DEFAULT_QUESTIONS = [
+  { id:'consent', type:'consent',
+    q:'Antes de começar, não precisamos saber como você se chama... mas precisamos da sua ajuda para melhorar a assistência à PopRua de forma inovadora e simples. Você pode ajudar?',
+    options:['Sim, quero ajudar','Agora não'] },
+
+  { id:'servico', type:'tags',
+    q:'Em qual serviço você atua?',
+    sub:'Pode marcar mais de um.',
+    options:['Consultório na Rua','SEAS','Gestão','CentroPOP','Abrigos','Outros'] },
+
+  { id:'funcao', type:'tags',
+    q:'Qual é a sua função?',
+    sub:'Pode marcar mais de uma.',
+    options:['Assistente Social','Gestor','Médico','Enfermeiro','Psicólogo','Fisioterapeuta','Técnico de Enfermagem','Educador Social','Técnico Administrativo'] },
+
+  { id:'tempo', type:'duration',
+    q:'Há quanto tempo você atua nesse serviço?',
+    sub:'Escolha a unidade (meses ou anos) e selecione o tempo.' },
+
+  { id:'usa', type:'radio', big:true,
+    q:'Você usa o E-Rua?',
+    options:['Sim','Não'] },
+
+  { id:'frequencia', type:'radio', big:true,
+    q:'Com que frequência você acessa a plataforma?',
+    options:['Diariamente','Semanalmente','Mensalmente','Raramente','Nunca'],
+    skipIf: a => a.usa === 'Não' },
+
+  { id:'antes', type:'text_audio',
+    q:'Como era o seu trabalho antes do E-Rua?',
+    sub:'Você pode escrever, gravar em áudio ou usar os dois.',
+    placeholder:'Descreva o fluxo, as ligações, os papéis, os grupos de WhatsApp…' },
+
+  { id:'mudou', type:'text_audio',
+    q:'O que mudou depois dele?',
+    sub:'Você pode escrever, gravar em áudio ou usar os dois.',
+    placeholder:'O que ficou mais rápido, mais seguro, mais visível…' },
+
+  { id:'resolve', type:'text_audio',
+    q:'Que situações concretas o E-Rua resolve no seu dia?',
+    sub:'Você pode escrever, gravar em áudio ou usar os dois.',
+    placeholder:'Ex.: encaminhamento do eCR para o SEAS em poucos minutos…' },
+
+  { id:'caso', type:'text_audio',
+    q:'Você lembra de algum caso em que o E-Rua foi decisivo?',
+    sub:'Conte em texto, áudio ou ambos. Sem citar nomes ou dados pessoais.',
+    placeholder:'Conte o que aconteceu, como a informação circulou e qual foi o impacto…' },
+
+  { id:'naofunciona', type:'text_audio',
+    q:'O que ainda não funciona bem no E-Rua?',
+    sub:'Você pode escrever, gravar em áudio ou usar os dois.',
+    placeholder:'Liste sem filtro.' },
+
+  { id:'fora', type:'text_audio',
+    q:'O que você faz fora dele porque ele não dá conta?',
+    sub:'Você pode escrever, gravar em áudio ou usar os dois.',
+    placeholder:'Planilhas paralelas, cadernos, telefone, grupos…' },
+
+  { id:'evita', type:'text_audio',
+    q:'O que você evita usar no E-Rua? Por quê?',
+    sub:'Você pode escrever, gravar em áudio ou usar os dois.',
+    placeholder:'Telas confusas, campos inúteis, lentidão…' },
+
+  { id:'dificuldades', type:'text_audio',
+    q:'Que dificuldades de acesso, usabilidade ou treinamento existem?',
+    sub:'Você pode escrever, gravar em áudio ou usar os dois.',
+    placeholder:'Login, senha, celular, internet, falta de capacitação…' },
+
+  { id:'avaliacao', type:'scale',
+    q:'Como você avalia o E-Rua hoje?',
+    sub:'1 = ruim · 5 = ótimo' },
+
+  { id:'tres', type:'triple',
+    q:'Se pudesse pedir 3 coisas para a próxima versão, quais seriam?',
+    sub:'Escreva em ordem de importância.' },
+
+  { id:'prioridades', type:'checkbox',
+    q:'Marque as funcionalidades que você considera prioritárias.',
+    sub:'Pode marcar quantas quiser.',
+    options:DEFAULT_FUNCIONALIDADES },
+
+  { id:'prioridade1', type:'radio',
+    q:'E se fosse para escolher só uma como prioridade número 1?',
+    options:DEFAULT_FUNCIONALIDADES },
+
+  { id:'futuro', type:'textarea',
+    q:'O que você acha que deve acontecer com o E-Rua daqui para frente?',
+    placeholder:'Continuar, evoluir, ser absorvido pelo município…' },
+
+  { id:'disposto', type:'checkbox',
+    q:'O que você está disposto(a) a fazer para apoiar essa continuidade?',
+    options:['Participar de reuniões','Validar a V.2','Assinar carta de apoio','Mobilizar colegas','Outro'] },
+
+  { id:'apoio', type:'radio', big:true,
+    q:'Você apoia a continuidade de uso do E-Rua pelo município?',
+    options:['Sim','Não','Preciso de mais informações'] },
+
+  { id:'validar', type:'radio', big:true,
+    q:'Quer ajudar na validação da V.2?',
+    options:['Sim','Não'] },
+
+  { id:'comentarios', type:'textarea',
+    q:'Algum comentário livre?',
+    sub:'Espaço aberto. Opcional.',
+    placeholder:'Escreva o que quiser…' },
+
+  { id:'contato', type:'text', optional:true,
+    q:'Deixe um contato, se quiser acompanhar os próximos passos.',
+    sub:'Opcional.',
+    placeholder:'E-mail ou telefone' }
+];
+
+let questions = [...DEFAULT_QUESTIONS];
+const answers = {};
+const audioStore = {};
+let index = 0;
+let typingToken = 0;
+let submissionCompleted = false;
+
+const $ = id => document.getElementById(id);
+const qEl = $('question');
+const subEl = $('sub');
+const boxEl = $('answers');
+const nextBtn = $('next');
+const backBtn = $('back');
+
+let typing = null;
+
+async function carregarPerguntasRemotas() {
+  const statusEl = $('sync-status');
+  const labelEl = $('sync-label');
+
+  if (!SCRIPT_URL || SCRIPT_URL.includes('COLE_SUA_URL_AQUI')) {
+    labelEl.textContent = 'Modo padrão (Planilha offline)';
+    statusEl.className = 'sync-indicator offline';
+    return;
+  }
+
+  try {
+    labelEl.textContent = 'Carregando da planilha…';
+    const res = await fetch(SCRIPT_URL + '?action=getQuestions', { method: 'GET' });
+    const data = await res.json();
+    if (data.success && Array.isArray(data.questions) && data.questions.length > 0) {
+      questions = data.questions.map(q => {
+        if (q.id === 'frequencia') {
+          q.skipIf = a => a.usa === 'Não';
+        }
+        return q;
+      });
+      labelEl.textContent = 'Perguntas sincronizadas (Sheets: ' + (data.spreadsheetName || 'QUIZ 10-26') + ')';
+      statusEl.className = 'sync-indicator online';
+    } else {
+      labelEl.textContent = 'Perguntas locais ativas';
+    }
+  } catch (err) {
+    labelEl.textContent = 'Modo local (Sheets inacessível)';
+    statusEl.className = 'sync-indicator offline';
+  }
+}
+
+carregarPerguntasRemotas();
+
+function typeText(el, text, speed = 8) {
+  return new Promise(resolve => {
+    if (typing) finishTyping();
+    const state = { el, full: text, resolve, i: 0, timer: null };
+    typing = state;
+    el.textContent = '';
+    el.classList.add('caret');
+
+    const step = () => {
+      if (typing !== state) return;
+      if (state.i >= text.length) { finishTyping(); return; }
+      
+      const stepSize = text.length > 120 ? 3 : text.length > 50 ? 2 : 1;
+      state.i = Math.min(text.length, state.i + stepSize);
+      el.textContent = text.slice(0, state.i);
+      
+      const s = text.length > 100 ? Math.max(5, speed * 0.4)
+              : text.length > 40  ? Math.max(6, speed * 0.6)
+              : speed;
+      state.timer = setTimeout(step, s);
+    };
+    state.timer = setTimeout(step, speed);
+  });
+}
+
+function finishTyping() {
+  if (!typing) return;
+  const s = typing;
+  typing = null;
+  clearTimeout(s.timer);
+  s.el.textContent = s.full;
+  s.el.classList.remove('caret');
+  s.resolve();
+}
+
+document.addEventListener('click', e => {
+  if (typing && !e.target.closest('.opt, .btn, .scale__btn, .tag, .duration-chip, .duration-tab, .duration-step-btn, .audio__btn')) {
+    finishTyping();
+  }
+});
+
+function nextIndex(from, dir) {
+  let j = from + dir;
+  while (j >= 0 && j < questions.length) {
+    const q = questions[j];
+    if (!q.skipIf || !q.skipIf(answers)) return j;
+    j += dir;
+  }
+  return -1;
+}
+
+function isAnswered(q) {
+  const v = answers[q.id];
+  if (v === undefined || v === null) return false;
+  if (Array.isArray(v)) return v.some(x => String(x).trim().length > 0);
+  if (typeof v === 'object') {
+    if (v.blob) return true;
+    if (v.text && String(v.text).trim().length > 0) return true;
+    if (v.audio && v.audio.blob) return true;
+    return false;
+  }
+  return String(v).trim().length > 0;
+}
+
+function canAdvance() {
+  const q = questions[index];
+  return q.optional ? true : isAnswered(q);
+}
+
+function checkNav() {
+  nextBtn.disabled = !canAdvance();
+  backBtn.disabled = nextIndex(index, -1) === -1;
+}
+
+async function showQuestion(i) {
+  index = i;
+  const q = questions[i];
+  const token = ++typingToken;
+
+  boxEl.className = 'answers';
+  boxEl.innerHTML = '';
+  subEl.textContent = '';
+  subEl.classList.remove('show');
+  nextBtn.disabled = true;
+  backBtn.disabled = true;
+
+  $('count').textContent = String(i + 1).padStart(2, '0') + ' / ' + questions.length;
+  $('bar').style.width = ((i) / questions.length * 100) + '%';
+
+  $('hint').classList.add('show');
+  await typeText(qEl, q.q, 8);
+  $('hint').classList.remove('show');
+
+  if (token !== typingToken) return;
+  if (q.sub) { subEl.textContent = q.sub; subEl.classList.add('show'); }
+
+  renderAnswers(q, boxEl);
+  boxEl.classList.add('show');
+  checkNav();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function goNext() {
+  if (!canAdvance()) return;
+  const n = nextIndex(index, 1);
+  if (n === -1) finish();
+  else showQuestion(n);
+}
+
+function goPrev() {
+  const p = nextIndex(index, -1);
+  if (p !== -1) showQuestion(p);
+}
+
+function renderDurationPicker(q, box, prev) {
+  let currentUnit = 'anos';
+  let currentValue = 1;
+
+  if (prev && typeof prev === 'string') {
+    const match = prev.match(/(\d+|\<1|30\+)\s*(meses?|anos?)/i);
+    if (match) {
+      if (match[2].toLowerCase().startsWith('m')) {
+        currentUnit = 'meses';
+        currentValue = parseInt(match[1]) || 1;
+      } else {
+        currentUnit = 'anos';
+        currentValue = match[1] === '<1' ? 0.5 : (parseInt(match[1]) || 1);
+      }
+    }
+  }
+
+  const wrap = document.createElement('div');
+  wrap.className = 'duration-picker';
+  wrap.innerHTML = `
+    <div class="duration-tabs">
+      <button type="button" class="duration-tab ${currentUnit === 'meses' ? 'is-active' : ''}" data-unit="meses">Meses</button>
+      <button type="button" class="duration-tab ${currentUnit === 'anos' ? 'is-active' : ''}" data-unit="anos">Anos</button>
+    </div>
+    <div class="duration-quick" id="duration-chips"></div>
+    <div class="duration-stepper">
+      <button type="button" class="duration-step-btn" id="step-dec" aria-label="Diminuir">−</button>
+      <div class="duration-value-display" id="duration-val">
+        <span>${currentValue}</span> ${currentUnit === 'meses' ? (currentValue === 1 ? 'mês' : 'meses') : (currentValue === 1 ? 'ano' : 'anos')}
+      </div>
+      <button type="button" class="duration-step-btn" id="step-inc" aria-label="Aumentar">+</button>
+    </div>
+  `;
+
+  const chipsContainer = wrap.querySelector('#duration-chips');
+  const valDisplay = wrap.querySelector('#duration-val');
+  const tabs = wrap.querySelectorAll('.duration-tab');
+  const decBtn = wrap.querySelector('#step-dec');
+  const incBtn = wrap.querySelector('#step-inc');
+
+  const updateDisplay = () => {
+    let text = '';
+    if (currentUnit === 'meses') {
+      text = currentValue === 1 ? `${currentValue} mês` : `${currentValue} meses`;
+    } else {
+      text = currentValue === 1 ? `${currentValue} ano` : `${currentValue} anos`;
+    }
+    valDisplay.innerHTML = `<span>${currentValue}</span> ${currentUnit === 'meses' ? (currentValue === 1 ? 'mês' : 'meses') : (currentValue === 1 ? 'ano' : 'anos')}`;
+    answers[q.id] = text;
+    checkNav();
+  };
+
+  const renderChips = () => {
+    chipsContainer.innerHTML = '';
+    const presets = currentUnit === 'meses'
+      ? [1, 2, 3, 4, 6, 8, 10, 11]
+      : [1, 2, 3, 4, 5, 8, 10, 15, 20, 25, 30];
+
+    presets.forEach(num => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'duration-chip' + (currentValue === num ? ' is-sel' : '');
+      chip.textContent = num + (currentUnit === 'meses' ? (num === 1 ? ' mês' : ' meses') : (num === 1 ? ' ano' : ' anos'));
+      chip.addEventListener('click', () => {
+        currentValue = num;
+        wrap.querySelectorAll('.duration-chip').forEach(c => c.classList.remove('is-sel'));
+        chip.classList.add('is-sel');
+        updateDisplay();
+      });
+      chipsContainer.appendChild(chip);
+    });
+  };
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('is-active'));
+      tab.classList.add('is-active');
+      currentUnit = tab.dataset.unit;
+      currentValue = currentUnit === 'meses' ? 6 : 2;
+      renderChips();
+      updateDisplay();
+    });
+  });
+
+  decBtn.addEventListener('click', () => {
+    if (currentValue > 1) {
+      currentValue -= 1;
+      renderChips();
+      updateDisplay();
+    }
+  });
+
+  incBtn.addEventListener('click', () => {
+    const max = currentUnit === 'meses' ? 36 : 50;
+    if (currentValue < max) {
+      currentValue += 1;
+      renderChips();
+      updateDisplay();
+    }
+  });
+
+  renderChips();
+  updateDisplay();
+  box.appendChild(wrap);
+}
+
+function createAudioRecorder(qid, prevAudio, onUpdate) {
+  const wrap = document.createElement('div');
+  wrap.className = 'audio';
+  wrap.innerHTML = `
+    <div class="audio__stage">
+      <button type="button" class="audio__btn" data-role="rec">
+        <span class="audio__dot"></span>
+        <span class="audio__label">Gravar áudio</span>
+      </button>
+      <div class="audio__timer">00:00</div>
+    </div>
+    <div class="audio__play" hidden>
+      <audio controls preload="metadata"></audio>
+      <button type="button" class="audio__redo">Regravar</button>
+    </div>
+    <div class="audio__hint">Sua fala será salva no Google Drive (pasta E-RUA 27) e no AppSheet.</div>
+  `;
+
+  const recBtn = wrap.querySelector('[data-role="rec"]');
+  const recLabel = wrap.querySelector('.audio__label');
+  const timerEl = wrap.querySelector('.audio__timer');
+  const playBox = wrap.querySelector('.audio__play');
+  const audioEl = wrap.querySelector('audio');
+  const redoBtn = wrap.querySelector('.audio__redo');
+
+  let mediaRecorder = null;
+  let chunks = [];
+  let timerInt = null;
+  let secs = 0;
+  let stream = null;
+
+  const fmt = s => String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0');
+
+  function setRecording(on) {
+    wrap.classList.toggle('is-rec', on);
+    recLabel.textContent = on ? 'Parar gravação' : 'Gravar áudio';
+  }
+
+  async function startRec() {
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (err) {
+      recLabel.textContent = 'Microfone indisponível';
+      return;
+    }
+    chunks = [];
+    const mime = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4';
+    mediaRecorder = new MediaRecorder(stream);
+    mediaRecorder.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+    mediaRecorder.onstop = () => {
+      const blob = new Blob(chunks, { type: chunks[0]?.type || mime });
+      const url = URL.createObjectURL(blob);
+      audioEl.src = url;
+      playBox.hidden = false;
+      const data = { blob, url, duration: secs, type: blob.type };
+      audioStore[qid] = data;
+      onUpdate(data);
+      stream.getTracks().forEach(t => t.stop());
+    };
+    mediaRecorder.start();
+    secs = 0;
+    timerEl.textContent = '00:00';
+    setRecording(true);
+    timerInt = setInterval(() => { secs++; timerEl.textContent = fmt(secs); }, 1000);
+  }
+
+  function stopRec() {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+    clearInterval(timerInt);
+    setRecording(false);
+  }
+
+  recBtn.addEventListener('click', () => {
+    if (mediaRecorder && mediaRecorder.state === 'recording') stopRec();
+    else startRec();
+  });
+
+  redoBtn.addEventListener('click', () => {
+    if (audioStore[qid]?.url) URL.revokeObjectURL(audioStore[qid].url);
+    delete audioStore[qid];
+    playBox.hidden = true;
+    audioEl.src = '';
+    timerEl.textContent = '00:00';
+    secs = 0;
+    onUpdate(null);
+  });
+
+  if (prevAudio && prevAudio.url) {
+    audioEl.src = prevAudio.url;
+    playBox.hidden = false;
+    timerEl.textContent = fmt(prevAudio.duration || 0);
+  }
+
+  return wrap;
+}
+
+function renderAnswers(q, box) {
+  const prev = answers[q.id];
+
+  /* 1. CONSENTIMENTO */
+  if (q.type === 'consent') {
+    const wrap = document.createElement('div');
+    wrap.className = 'consent';
+    wrap.innerHTML = `
+      <div class="smiley-wrap">
+        <svg class="smiley" viewBox="0 0 120 120" fill="none" aria-hidden="true">
+          <circle cx="60" cy="60" r="52" stroke="currentColor" stroke-width="5"/>
+          <circle class="eye eye--l" cx="42" cy="48" r="6" fill="currentColor"/>
+          <circle class="eye eye--r" cx="78" cy="48" r="6" fill="currentColor"/>
+          <path class="mouth" d="M 34 74 Q 60 100 86 74" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="opts opts--big">
+        <button type="button" class="opt" data-v="Sim, quero ajudar">
+          <span class="opt__txt">Sim, quero ajudar</span>
+        </button>
+        <button type="button" class="opt" data-v="Agora não">
+          <span class="opt__txt">Agora não</span>
+        </button>
+      </div>
+    `;
+    wrap.querySelectorAll('.opt').forEach(b => {
+      b.addEventListener('click', () => {
+        const v = b.dataset.v;
+        answers[q.id] = v;
+        wrap.querySelectorAll('.opt').forEach(c => c.classList.remove('is-sel'));
+        b.classList.add('is-sel');
+        setTimeout(() => {
+          if (v === 'Agora não') politeEnd();
+          else goNext();
+        }, 420);
+      });
+    });
+    box.appendChild(wrap);
+    return;
+  }
+
+  /* 2. TEXTO CURTO */
+  if (q.type === 'text') {
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'input';
+    input.placeholder = q.placeholder || 'Digite aqui…';
+    input.value = typeof prev === 'string' ? prev : '';
+    input.addEventListener('input', () => {
+      answers[q.id] = input.value.trim();
+      checkNav();
+    });
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); if (canAdvance()) goNext(); }
+    });
+    box.appendChild(input);
+    setTimeout(() => input.focus(), 80);
+    return;
+  }
+
+  /* 3. TEXTO LONGO */
+  if (q.type === 'textarea') {
+    const ta = document.createElement('textarea');
+    ta.className = 'textarea';
+    ta.placeholder = q.placeholder || 'Escreva com liberdade…';
+    ta.value = typeof prev === 'string' ? prev : '';
+    ta.addEventListener('input', () => {
+      answers[q.id] = ta.value.trim();
+      checkNav();
+      ta.style.height = 'auto';
+      ta.style.height = Math.max(140, ta.scrollHeight) + 'px';
+    });
+    box.appendChild(ta);
+    setTimeout(() => ta.focus(), 80);
+    return;
+  }
+
+  /* 4. CAMPO HÍBRIDO (ESCRITA + ÁUDIO) */
+  if (q.type === 'text_audio') {
+    const container = document.createElement('div');
+    container.className = 'hybrid-field';
+
+    const currentText = (typeof prev === 'object' && prev !== null) ? (prev.text || '') : (typeof prev === 'string' ? prev : '');
+    const currentAudio = (typeof prev === 'object' && prev !== null) ? (prev.audio || (prev.blob ? prev : null)) : (audioStore[q.id] || null);
+
+    const ta = document.createElement('textarea');
+    ta.className = 'textarea';
+    ta.placeholder = q.placeholder || 'Escreva sua resposta aqui se preferir digitar…';
+    ta.value = currentText;
+
+    const syncHybrid = () => {
+      const stateObj = {
+        text: ta.value.trim(),
+        audio: audioStore[q.id] || null
+      };
+      answers[q.id] = stateObj;
+      checkNav();
+    };
+
+    ta.addEventListener('input', () => {
+      syncHybrid();
+      ta.style.height = 'auto';
+      ta.style.height = Math.max(130, ta.scrollHeight) + 'px';
+    });
+
+    container.appendChild(ta);
+
+    const div = document.createElement('div');
+    div.className = 'hybrid-divider';
+    div.textContent = 'ou responda gravando áudio';
+    container.appendChild(div);
+
+    const audioWidget = createAudioRecorder(q.id, currentAudio, (audioData) => {
+      if (audioData) audioStore[q.id] = audioData;
+      else delete audioStore[q.id];
+      syncHybrid();
+    });
+
+    container.appendChild(audioWidget);
+    box.appendChild(container);
+
+    syncHybrid();
+    setTimeout(() => ta.focus(), 80);
+    return;
+  }
+
+  /* 5. SELETOR DE DURAÇÃO */
+  if (q.type === 'duration') {
+    renderDurationPicker(q, box, prev);
+    return;
+  }
+
+  /* 6. TAGS DE ESCOLHA MÚLTIPLA */
+  if (q.type === 'tags') {
+    const sel = Array.isArray(prev) ? prev.slice() : [];
+    const wrap = document.createElement('div');
+    wrap.className = 'tags';
+
+    const optsList = Array.isArray(q.options) ? q.options : DEFAULT_FUNCIONALIDADES;
+
+    optsList.forEach((opt, i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'tag' + (sel.includes(opt) ? ' is-sel' : '');
+      b.textContent = opt;
+      b.style.animationDelay = (i * 35) + 'ms';
+      b.addEventListener('click', () => {
+        const pos = sel.indexOf(opt);
+        if (pos === -1) { sel.push(opt); b.classList.add('is-sel'); }
+        else { sel.splice(pos, 1); b.classList.remove('is-sel'); }
+        answers[q.id] = sel.slice();
+        if (outrosBox) outrosBox.classList.toggle('show', sel.includes('Outros'));
+        checkNav();
+      });
+      wrap.appendChild(b);
+    });
+    box.appendChild(wrap);
+
+    let outrosBox = null;
+    if (optsList.includes('Outros')) {
+      outrosBox = document.createElement('input');
+      outrosBox.type = 'text';
+      outrosBox.className = 'input outros-input' + (sel.includes('Outros') ? ' show' : '');
+      outrosBox.placeholder = 'Se marcou "Outros", especifique…';
+      outrosBox.value = answers[q.id + '_outros'] || '';
+      outrosBox.addEventListener('input', () => {
+        answers[q.id + '_outros'] = outrosBox.value.trim();
+      });
+      box.appendChild(outrosBox);
+    }
+    return;
+  }
+
+  /* 7. OPÇÃO ÚNICA (RADIO) */
+  if (q.type === 'radio') {
+    const wrap = document.createElement('div');
+    wrap.className = 'opts' + (q.big ? ' opts--big' : '');
+    const optsList = Array.isArray(q.options) ? q.options : ['Sim', 'Não'];
+
+    optsList.forEach(opt => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'opt' + (prev === opt ? ' is-sel' : '');
+      b.innerHTML = '<span class="opt__mark"></span><span class="opt__txt"></span>';
+      b.querySelector('.opt__txt').textContent = opt;
+
+      b.addEventListener('click', () => {
+        const myIndex = index;
+        answers[q.id] = opt;
+        [...wrap.children].forEach(c => c.classList.remove('is-sel'));
+        b.classList.add('is-sel');
+        checkNav();
+        setTimeout(() => { if (index === myIndex && canAdvance()) goNext(); }, 420);
+      });
+      wrap.appendChild(b);
+    });
+    box.appendChild(wrap);
+    return;
+  }
+
+  /* 8. MÚLTIPLA ESCOLHA (CHECKBOX) */
+  if (q.type === 'checkbox') {
+    const sel = Array.isArray(prev) ? prev.slice() : [];
+    const wrap = document.createElement('div');
+    wrap.className = 'opts';
+    const optsList = Array.isArray(q.options) ? q.options : DEFAULT_FUNCIONALIDADES;
+
+    optsList.forEach(opt => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'opt opt--check' + (sel.includes(opt) ? ' is-sel' : '');
+      b.innerHTML = '<span class="opt__mark"></span><span class="opt__txt"></span>';
+      b.querySelector('.opt__txt').textContent = opt;
+
+      b.addEventListener('click', () => {
+        const pos = sel.indexOf(opt);
+        if (pos === -1) { sel.push(opt); b.classList.add('is-sel'); }
+        else { sel.splice(pos, 1); b.classList.remove('is-sel'); }
+        answers[q.id] = sel.slice();
+        checkNav();
+      });
+      wrap.appendChild(b);
+    });
+    box.appendChild(wrap);
+    return;
+  }
+
+  /* 9. ESCALA 1 A 5 */
+  if (q.type === 'scale') {
+    const wrap = document.createElement('div');
+    wrap.className = 'scale';
+    [1,2,3,4,5].forEach(n => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'scale__btn' + (String(prev) === String(n) ? ' is-sel' : '');
+      b.textContent = n;
+      b.addEventListener('click', () => {
+        const myIndex = index;
+        answers[q.id] = n;
+        [...wrap.children].forEach(c => c.classList.remove('is-sel'));
+        b.classList.add('is-sel');
+        checkNav();
+        setTimeout(() => { if (index === myIndex && canAdvance()) goNext(); }, 420);
+      });
+      wrap.appendChild(b);
+    });
+    const labels = document.createElement('div');
+    labels.className = 'scale__labels';
+    labels.innerHTML = '<span>Ruim</span><span>Ótimo</span>';
+
+    const holder = document.createElement('div');
+    holder.appendChild(wrap);
+    holder.appendChild(labels);
+    box.appendChild(holder);
+    return;
+  }
+
+  /* 10. TRÊS PRIORIDADES */
+  if (q.type === 'triple') {
+    const vals = Array.isArray(prev) ? prev.slice() : ['','',''];
+    const wrap = document.createElement('div');
+    wrap.className = 'triple';
+    [0,1,2].forEach(i => {
+      const row = document.createElement('div');
+      row.className = 'row';
+      const num = document.createElement('span');
+      num.className = 'num';
+      num.textContent = (i + 1) + 'ª';
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'input';
+      input.placeholder = i === 0 ? 'Prioridade máxima' : (i === 1 ? 'Segunda prioridade' : 'Terceira prioridade');
+      input.value = vals[i] || '';
+      input.addEventListener('input', () => {
+        vals[i] = input.value.trim();
+        answers[q.id] = vals.slice();
+        checkNav();
+      });
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const all = wrap.querySelectorAll('input');
+          if (i < 2) all[i + 1].focus();
+          else if (canAdvance()) goNext();
+        }
+      });
+      row.appendChild(num);
+      row.appendChild(input);
+      wrap.appendChild(row);
+    });
+    box.appendChild(wrap);
+    setTimeout(() => wrap.querySelector('input')?.focus(), 80);
+    return;
+  }
+}
+
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function enviarParaPlanilha() {
+  const statusEl = $('cloud-status');
+  const protoEl = $('cloud-protocol');
+  const retryBtn = $('cloud-retry');
+
+  if (!SCRIPT_URL || SCRIPT_URL.includes('COLE_SUA_URL_AQUI')) {
+    statusEl.textContent = 'Respostas salvas localmente (Script URL não configurada).';
+    statusEl.className = 'cloud-box__status';
+    return;
+  }
+
+  statusEl.textContent = 'Enviando respostas e áudios para QUIZ 10-26 (E-RUA 27)…';
+  statusEl.className = 'cloud-box__status';
+  retryBtn.style.display = 'none';
+
+  try {
+    const payloadAudios = {};
+    for (const qid in audioStore) {
+      const audioData = audioStore[qid];
+      if (audioData && audioData.blob) {
+        statusEl.textContent = 'Codificando áudio da pergunta ' + qid + '…';
+        const b64 = await blobToBase64(audioData.blob);
+        payloadAudios[qid] = {
+          base64: b64,
+          mimeType: audioData.type || 'audio/webm',
+          extensao: audioData.type && audioData.type.includes('mp4') ? 'mp4' : 'webm',
+          duration: audioData.duration || 0
+        };
+      }
+    }
+
+    const payload = {
+      respostas: answers,
+      audios: payloadAudios,
+      timestamp: new Date().toISOString()
+    };
+
+    statusEl.textContent = 'Gravando na planilha QUIZ 10-26…';
+
+    const resp = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
+    });
+
+    const resJson = await resp.json();
+
+    if (resJson.success) {
+      submissionCompleted = true;
+      statusEl.textContent = 'Sincronizado com sucesso na planilha QUIZ 10-26 e AppSheet! ✓';
+      statusEl.className = 'cloud-box__status sent';
+      protoEl.textContent = 'Protocolo: ' + resJson.protocolo;
+    } else {
+      throw new Error(resJson.error || 'Erro desconhecido na planilha.');
+    }
+  } catch (err) {
+    statusEl.textContent = 'Falha no envio para a nuvem. Suas respostas continuam salvas abaixo.';
+    statusEl.className = 'cloud-box__status error';
+    retryBtn.style.display = 'inline-flex';
+  }
+}
+
+$('cloud-retry').addEventListener('click', enviarParaPlanilha);
+
+function switchScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('is-active'));
+  $(id).classList.add('is-active');
+  window.scrollTo({ top: 0, behavior: 'auto' });
+}
+
+function resetEndScreen() {
+  $('end-title').textContent = 'Obrigado.';
+  $('end-lead').textContent = 'Sua escuta entrou para o dossiê coletivo do E-Rua.';
+  $('end-actions').style.display = 'flex';
+  $('summary').style.display = '';
+}
+
+function start() {
+  resetEndScreen();
+  switchScreen('screen-quiz');
+  showQuestion(0);
+}
+
+function finish() {
+  $('bar').style.width = '100%';
+  renderSummary();
+  switchScreen('screen-end');
+  enviarParaPlanilha();
+}
+
+function politeEnd() {
+  $('bar').style.width = '100%';
+  $('end-title').textContent = 'Sem problemas.';
+  $('end-lead').textContent = 'O E-Rua é construído por quem está na ponta. Se um dia quiser contribuir, a porta fica aberta.';
+  $('end-actions').style.display = 'none';
+  $('summary').style.display = 'none';
+  $('cloud-box').style.display = 'none';
+  switchScreen('screen-end');
+}
+
+function renderSummary() {
+  const summary = $('summary');
+  summary.innerHTML = '';
+  questions.forEach(q => {
+    const v = answers[q.id];
+    if (v === undefined || v === null) return;
+    if (Array.isArray(v) && !v.some(x => String(x).trim())) return;
+    if (typeof v === 'string' && !v.trim()) return;
+
+    const item = document.createElement('div');
+    item.className = 'summary__item';
+
+    const qt = document.createElement('div');
+    qt.className = 'summary__q';
+    qt.textContent = q.q;
+    item.appendChild(qt);
+
+    const at = document.createElement('div');
+    at.className = 'summary__a';
+
+    if (typeof v === 'object' && (v.text !== undefined || v.audio !== undefined)) {
+      if (v.text && v.text.trim()) {
+        const textNode = document.createElement('p');
+        textNode.textContent = v.text;
+        at.appendChild(textNode);
+      }
+      if (v.audio && v.audio.blob) {
+        const label = document.createElement('div');
+        label.style.marginTop = v.text ? '10px' : '0';
+        label.textContent = 'Áudio gravado · ' + fmtSecs(v.audio.duration || 0);
+        at.appendChild(label);
+        const a = document.createElement('audio');
+        a.controls = true;
+        a.src = v.audio.url;
+        at.appendChild(a);
+        const dl = document.createElement('a');
+        dl.href = v.audio.url;
+        dl.download = 'e-rua-' + q.id + '.webm';
+        dl.className = 'summary__dl';
+        dl.textContent = 'Baixar áudio';
+        at.appendChild(dl);
+      }
+      item.appendChild(at);
+    } else {
+      let text = Array.isArray(v) ? v.filter(x => String(x).trim()).join(' · ') : v;
+      const extra = answers[q.id + '_outros'];
+      if (q.type === 'tags' && extra && Array.isArray(v) && v.includes('Outros')) {
+        text = text.replace('Outros', 'Outros: ' + extra);
+      }
+      at.textContent = text;
+      item.appendChild(at);
+    }
+
+    summary.appendChild(item);
+  });
+}
+
+function fmtSecs(s) {
+  const m = Math.floor(s/60), r = s % 60;
+  return String(m).padStart(2,'0') + ':' + String(r).padStart(2,'0');
+}
+
+function buildReport() {
+  let out = 'E-RUA — ESCUTA COM OS TRABALHADORES\n';
+  out += 'Consultório na Rua · SEAS · Vila Velha\n';
+  out += 'Data: ' + new Date().toLocaleString('pt-BR') + '\n';
+  out += '='.repeat(52) + '\n\n';
+  questions.forEach((q, i) => {
+    const v = answers[q.id];
+    if (v === undefined || v === null) return;
+    if (Array.isArray(v) && !v.some(x => String(x).trim())) return;
+    if (typeof v === 'string' && !v.trim()) return;
+    out += String(i + 1).padStart(2, '0') + '. ' + q.q + '\n';
+
+    if (typeof v === 'object' && (v.text !== undefined || v.audio !== undefined)) {
+      if (v.text && v.text.trim()) out += '    [Texto]: ' + v.text + '\n';
+      if (v.audio && v.audio.blob) out += '    [Áudio gravado · ' + fmtSecs(v.audio.duration || 0) + ']\n';
+      out += '\n';
+    } else {
+      let text = Array.isArray(v) ? v.filter(x => String(x).trim()).join(' | ') : v;
+      const extra = answers[q.id + '_outros'];
+      if (q.type === 'tags' && extra && Array.isArray(v) && v.includes('Outros')) {
+        text = text.replace('Outros', 'Outros: ' + extra);
+      }
+      out += '    ' + text + '\n\n';
+    }
+  });
+  return out;
+}
+
+$('copy').addEventListener('click', async () => {
+  const btn = $('copy');
+  try {
+    const report = buildReport();
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(report);
+    } else {
+      const t = document.createElement('textarea');
+      t.value = report;
+      document.body.appendChild(t);
+      t.select();
+      document.execCommand('copy');
+      document.body.removeChild(t);
+    }
+    btn.textContent = 'Copiado ✓';
+  } catch {
+    btn.textContent = 'Não foi possível copiar';
+  }
+  setTimeout(() => { btn.textContent = 'Copiar respostas'; }, 2200);
+});
+
+$('download').addEventListener('click', () => {
+  const blob = new Blob([buildReport()], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'e-rua-escuta-' + new Date().toISOString().slice(0,10) + '.txt';
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+$('restart').addEventListener('click', () => location.reload());
+$('start').addEventListener('click', start);
+nextBtn.addEventListener('click', goNext);
+backBtn.addEventListener('click', goPrev);
+
+document.addEventListener('keydown', e => {
+  if (!$('screen-quiz').classList.contains('is-active')) return;
+  const tag = document.activeElement?.tagName;
+  const digitando = tag === 'INPUT' || tag === 'TEXTAREA';
+
+  if (e.key === 'Enter' && !digitando && canAdvance()) { e.preventDefault(); goNext(); }
+  if (e.key === 'ArrowRight' && !digitando && canAdvance()) goNext();
+  if (e.key === 'ArrowLeft' && !digitando) goPrev();
+  if (e.key === 'Escape') finishTyping();
+});
+</script>
+</body>
+</html>
+```
